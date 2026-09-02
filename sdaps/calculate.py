@@ -33,12 +33,16 @@ class Questionnaire(model.buddy.Buddy, metaclass=model.buddy.Register):
     name = 'calculate'
     obj_class = model.questionnaire.Questionnaire
 
-    def init(self):
-        """Initialize or reset the state of the calculate module."""
+    def init(self, show_counts=False):
+        """Initialize or reset the state of the calculate module.
+
+        If *show_counts* is True, the raw answer counts are kept instead of
+        converting them to ratios (percentages)."""
         self.count = 0
+        self.show_counts = show_counts
         # iterate over qobjects
         for qobject in self.obj.qobjects:
-            qobject.calculate.init()
+            qobject.calculate.init(show_counts)
 
     def read(self):
         """The function collects the data from a sheet. You should use
@@ -70,8 +74,8 @@ class QObject(model.buddy.Buddy, metaclass=model.buddy.Register):
     name = 'calculate'
     obj_class = model.questionnaire.QObject
 
-    def init(self):
-        pass
+    def init(self, show_counts=False):
+        self.show_counts = show_counts
 
     def read(self):
         pass
@@ -98,8 +102,9 @@ class Choice(Question, metaclass=model.buddy.Register):
     name = 'calculate'
     obj_class = model.questionnaire.Choice
 
-    def init(self):
+    def init(self, show_counts=False):
         self.count = 0
+        self.show_counts = show_counts
         self.values = {box.value: 0 for box in self.obj.boxes}
         self.significant = {box.value: 0 for box in self.obj.boxes}
 
@@ -111,7 +116,8 @@ class Choice(Question, metaclass=model.buddy.Register):
     def calculate(self):
         if self.count:
             for value in self.values:
-                self.values[value] = self.values[value] / float(self.count)
+                if not self.show_counts:
+                    self.values[value] = self.values[value] / float(self.count)
                 if hasattr(self, 'ref_count'):
                     self.significant[value] = (
                         abs(self.values[value] - self.ref_values[value]) > 0.1)
@@ -144,8 +150,8 @@ class Range(Option, metaclass=model.buddy.Register):
     name = 'calculate'
     obj_class = model.questionnaire.Range
 
-    def init(self):
-        Option.init(self)
+    def init(self, show_counts=False):
+        Option.init(self, show_counts)
 
         self.significant = 0
         self.mean = 0
@@ -171,7 +177,8 @@ class Range(Option, metaclass=model.buddy.Register):
                 del self.values[key]
 
             for key in self.values:
-                self.values[key] = self.values[key] / float(self.count)
+                if not self.show_counts:
+                    self.values[key] = self.values[key] / float(self.count)
 
             if self.range_count > 0:
                 # First calculate the mean
@@ -185,8 +192,9 @@ class Range(Option, metaclass=model.buddy.Register):
                 self.standard_deviation = math.sqrt(self.standard_deviation / float(self.range_count))
 
                 # And finally store the percentage rather than count for each answer
-                for key in self.range_values:
-                    self.range_values[key] = self.range_values[key] / float(self.count)
+                if not self.show_counts:
+                    for key in self.range_values:
+                        self.range_values[key] = self.range_values[key] / float(self.count)
 
                 if hasattr(self, 'ref_count'):
                     self.significant = abs(self.mean - self.ref_mean) > 0.1
@@ -202,8 +210,9 @@ class Additional_FilterHistogram(Question, metaclass=model.buddy.Register):
     name = 'calculate'
     obj_class = model.questionnaire.Additional_FilterHistogram
 
-    def init(self):
+    def init(self, show_counts=False):
         self.count = 0
+        self.show_counts = show_counts
         self.values = [0] * len(self.obj.answers)
         self.significant = [0] * len(self.obj.answers)
 
@@ -219,7 +228,8 @@ class Additional_FilterHistogram(Question, metaclass=model.buddy.Register):
         if self.count:
             self.significant = dict()
             for i in range(len(self.values)):
-                self.values[i] = self.values[i] / float(self.count)
+                if not self.show_counts:
+                    self.values[i] = self.values[i] / float(self.count)
                 if hasattr(self, 'ref_count'):
                     self.significant[i] = (
                         abs(self.values[i] - self.ref_values[i]) > 0.1)

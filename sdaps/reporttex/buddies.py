@@ -40,14 +40,15 @@ class Questionnaire(model.buddy.Buddy, metaclass=model.buddy.Register):
     name = 'report'
     obj_class = model.questionnaire.Questionnaire
 
-    def init(self, img_dir, small=0, suppress=None):
+    def init(self, img_dir, small=0, suppress=None, show_counts=False):
         self.small = small
+        self.show_counts = show_counts
 
         self.textbox_writer = ImageWriter(img_dir, 'textbox-')
 
         # iterate over qobjects
         for qobject in self.obj.qobjects:
-            qobject.report.init(small, suppress)
+            qobject.report.init(small, suppress, show_counts)
 
     def report(self, tmpdir):
         # iterate over qobjects
@@ -55,6 +56,8 @@ class Questionnaire(model.buddy.Buddy, metaclass=model.buddy.Register):
             qobject.report.report(tmpdir)
 
     def write(self, out, tmpdir):
+        if self.show_counts:
+            out.write('\\sdapsreportcounts\n')
         # iterate over qobjects
         for qobject in self.obj.qobjects:
             qobject.report.write(out, tmpdir)
@@ -72,8 +75,9 @@ class QObject(model.buddy.Buddy, metaclass=model.buddy.Register):
     name = 'report'
     obj_class = model.questionnaire.QObject
 
-    def init(self, small, suppress):
+    def init(self, small, suppress, show_counts=False):
         self.small = small
+        self.show_counts = show_counts
 
     def report(self, tmpdir):
         pass
@@ -118,9 +122,10 @@ class Choice(Question, metaclass=model.buddy.Register):
     name = 'report'
     obj_class = model.questionnaire.Choice
 
-    def init(self, small, suppress):
+    def init(self, small, suppress, show_counts=False):
         self.small = small
         self.suppress = suppress
+        self.show_counts = show_counts
         self.text = ""
 
     def report(self, tmpdir):
@@ -147,7 +152,10 @@ class Choice(Question, metaclass=model.buddy.Register):
         self.write_begin(out)
         if self.obj.calculate.count:
             for box in self.obj.boxes:
-                out.write('''\\choiceanswer{%s}{%.3f}\n''' % (unicode_to_latex(box.text), self.obj.calculate.values[box.value]))
+                if self.show_counts:
+                    out.write('''\\choiceanswer{%s}{%i}{%i}\n''' % (unicode_to_latex(box.text), self.obj.calculate.values[box.value], self.obj.calculate.count))
+                else:
+                    out.write('''\\choiceanswer{%s}{%.3f}{%i}\n''' % (unicode_to_latex(box.text), self.obj.calculate.values[box.value], self.obj.calculate.count))
         self.write_end(out)
 
         out.write(self.text)
@@ -186,7 +194,10 @@ class Range(Question, metaclass=model.buddy.Register):
                     fraction = self.obj.calculate.range_values[key]
                 else:
                     fraction = 0
-                out.write('\\pgfkeyssetvalue{/sdaps/mark/%i/fraction}{%.3f}\n' % (key, fraction))
+                if self.show_counts:
+                    out.write('\\pgfkeyssetvalue{/sdaps/mark/%i/fraction}{%i}\n' % (key, fraction))
+                else:
+                    out.write('\\pgfkeyssetvalue{/sdaps/mark/%i/fraction}{%.3f}\n' % (key, fraction))
             out.write('\\pgfkeyssetvalue{/sdaps/mark/mean}{%.1f}\n' % (self.obj.calculate.mean))
             out.write('\n\\markanswer\n')
 
@@ -194,7 +205,10 @@ class Range(Question, metaclass=model.buddy.Register):
             out.write('\\begin{embedchoicequestion}\n')
             for box in self.obj.boxes:
                 if box.value in self.obj.calculate.values:
-                    out.write('''\\choiceanswer{%s}{%.3f}\n''' % (unicode_to_latex(box.text), self.obj.calculate.values[box.value]))
+                    if self.show_counts:
+                        out.write('''\\choiceanswer{%s}{%i}{%i}\n''' % (unicode_to_latex(box.text), self.obj.calculate.values[box.value], self.obj.calculate.count))
+                    else:
+                        out.write('''\\choiceanswer{%s}{%.3f}{%i}\n''' % (unicode_to_latex(box.text), self.obj.calculate.values[box.value], self.obj.calculate.count))
             out.write('\\end{embedchoicequestion}\n')
 
         Question.write_end(self, out)
@@ -209,9 +223,10 @@ class Text(Question, metaclass=model.buddy.Register):
     name = 'report'
     obj_class = model.questionnaire.Text
 
-    def init(self, small, suppress):
+    def init(self, small, suppress, show_counts=False):
         self.small = small
         self.suppress = suppress
+        self.show_counts = show_counts
         self.text = ""
 
     def report(self, tmpdir):
@@ -243,8 +258,12 @@ class Additional_FilterHistogram(Question, metaclass=model.buddy.Register):
 
         if self.obj.calculate.count:
             for i in range(len(self.obj.calculate.values)):
-                out.write('''\\choiceanswer{%s}{%.3f}\n''' %
-                          (unicode_to_latex(self.obj.answers[i]), self.obj.calculate.values[i]))
+                if self.show_counts:
+                    out.write('''\\choiceanswer{%s}{%i}{%i}\n''' %
+                              (unicode_to_latex(self.obj.answers[i]), self.obj.calculate.values[i], self.obj.calculate.count))
+                else:
+                    out.write('''\\choiceanswer{%s}{%.3f}{%i}\n''' %
+                              (unicode_to_latex(self.obj.answers[i]), self.obj.calculate.values[i], self.obj.calculate.count))
 
         Question.write_end(self, out)
 

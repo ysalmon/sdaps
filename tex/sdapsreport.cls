@@ -244,6 +244,12 @@
   \SI{\pgfmathresult}{\percent}
 }
 
+% When enabled, the report shows absolute answer counts instead of
+% percentages. The values passed to \choiceanswer and the mark diagram are
+% then raw counts, and the total count is used to scale the bars.
+\newif\if@sdapsreportcounts\@sdapsreportcountsfalse
+\newcommand*{\sdapsreportcounts}{\@sdapsreportcountstrue}
+
 \newlength{\einheit}
 \newcommand*{\markdiagram}{%
   \begin{tikzpicture}[semithick]
@@ -256,10 +262,18 @@
     {
       \pgfmathsetmacro\x{\key + 1 - \rangemin}
       \pgfkeysgetvalue{/sdaps/mark/\key/fraction}{\val}
-      \fill[xshift=\x\einheit,yshift=2pt, color=sdapsmarkbarcolor, draw=sdapsmarkbarframecolor, very thin]
-        (-0.5\einheit, 0) rectangle
-        (+0.5\einheit, \val\markbarheight);
-      \node[above] at (\x\einheit, \markbarheight) {\decimaltopercent{\val}};
+      \if@sdapsreportcounts
+        \pgfmathsetmacro\val{\val / \pgfkeysvalueof{/sdaps/mark/count}}
+        \fill[xshift=\x\einheit,yshift=2pt, color=sdapsmarkbarcolor, draw=sdapsmarkbarframecolor, very thin]
+          (-0.5\einheit, 0) rectangle
+          (+0.5\einheit, \val\markbarheight);
+        \node[above] at (\x\einheit, \markbarheight) {\num{\pgfkeysvalueof{/sdaps/mark/\key/fraction}}};
+      \else
+        \fill[xshift=\x\einheit,yshift=2pt, color=sdapsmarkbarcolor, draw=sdapsmarkbarframecolor, very thin]
+          (-0.5\einheit, 0) rectangle
+          (+0.5\einheit, \val\markbarheight);
+        \node[above] at (\x\einheit, \markbarheight) {\decimaltopercent{\val}};
+      \fi
     }
     \pgfmathparse{max(\pgfkeysvalueof{/sdaps/mark/mean}\einheit - %
       \pgfkeysvalueof{/sdaps/mark/stddev}\einheit, \einheit)}
@@ -293,13 +307,22 @@
   \endtabularx%
 }
 
-\newcommand*{\choiceanswer}[2]{%
+\newcommand*{\choiceanswer}[3]{%
   #1 &
-  \decimaltopercent{#2} &
-  \begin{tikzpicture}
-    \fill[color=sdapschoicebarcolor] (0, 0) rectangle (#2\answerbarwidth, 1em); %Anteil
-    \draw (0, 0) rectangle (\answerbarwidth, 1em); %Rahmen.Strich
-  \end{tikzpicture}\\
+  \if@sdapsreportcounts
+    \num{#2} &
+    \begin{tikzpicture}
+      \pgfmathsetmacro\barlen{#2/#3}
+      \fill[color=sdapschoicebarcolor] (0, 0) rectangle (\barlen\answerbarwidth, 1em); %Anteil
+      \draw (0, 0) rectangle (\answerbarwidth, 1em); %Rahmen.Strich
+    \end{tikzpicture}\\
+  \else
+    \decimaltopercent{#2} &
+    \begin{tikzpicture}
+      \fill[color=sdapschoicebarcolor] (0, 0) rectangle (#2\answerbarwidth, 1em); %Anteil
+      \draw (0, 0) rectangle (\answerbarwidth, 1em); %Rahmen.Strich
+    \end{tikzpicture}\\
+  \fi
 }
 
 \newcommand*{\markanswer}{%

@@ -42,7 +42,7 @@ from . import buddies
 import codecs
 
 
-def report(survey, filter, filename=None, papersize=None, small=0, suppress=None, tex_only=False):
+def report(survey, filter, filename=None, papersize=None, small=0, suppress=None, tex_only=False, show_counts=False):
     assert isinstance(survey, model.survey.Survey)
 
     # compile clifilter
@@ -51,7 +51,7 @@ def report(survey, filter, filename=None, papersize=None, small=0, suppress=None
     # First: calculate buddies
 
     # init buddies
-    survey.questionnaire.calculate.init()
+    survey.questionnaire.calculate.init(show_counts=show_counts)
 
     # iterate over sheets
     survey.iterate(
@@ -74,7 +74,7 @@ def report(survey, filter, filename=None, papersize=None, small=0, suppress=None
     # Second: report buddies
 
     # init buddies
-    survey.questionnaire.report.init(tmpdir, small, suppress)
+    survey.questionnaire.report.init(tmpdir, small, suppress, show_counts)
 
     # Filename of output
     if filename is None and tex_only == False:

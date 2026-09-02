@@ -53,6 +53,10 @@ parser.add_argument('-o', '--output',
 
 parser.add_argument('-f', '--filter',
     help=_("Filter to only export a partial dataset."))
+parser.add_argument('--show_counts',
+    help=_("Show absolute answer counts instead of percentages."),
+    action='store_true',
+    default=False)
 
 @script.connect(parser)
 @script.logfile
@@ -61,6 +65,6 @@ def report_tex(cmdline):
 
     survey = model.survey.Survey.load(cmdline['project'])
 
-    return reporttex.report(survey, cmdline['filter'], cmdline['output'], cmdline['papersize'], suppress=cmdline['suppress'], tex_only=cmdline['create-tex'])
+    return reporttex.report(survey, cmdline['filter'], cmdline['output'], cmdline['papersize'], suppress=cmdline['suppress'], tex_only=cmdline['create-tex'], show_counts=cmdline['show_counts'])
 
 
