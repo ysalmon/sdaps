@@ -18,3 +18,7 @@ _build
 dist
 setup.cfg
 sdaps-snapshot.spec
+examples/example.fdb_latexmk
+examples/example.fls
+examples/example.sdapsarraytic
+examples/example.sdapsarraytoc
